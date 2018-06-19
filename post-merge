@@ -5,12 +5,6 @@
 set -e
 
 # Set Generic Variables
-LOG_DIR="./logs"
-LOG_ERROR="$LOG_DIR/error.log"
-LOG_DEPLOY="$LOG_DIR/deploy.log"
-#TIME_FORMAT=$(date "%Y-%m-%d_%H:%M:%S");
-TIME_FORMAT_FILE=$(date +"%Y-%m-%d-%H%M%S")
-
 if [[ -d "$(pwd)/.git" ]]; then
   GIT_DIR="$(pwd)/.git"
   TPL_DIR="$(pwd)"
@@ -20,9 +14,15 @@ elif [[ -d "$(dirname "$(pwd)")/.git" ]]; then
   TPL_DIR="$(dirname "$(pwd)")"
   ROOT_DIR="$(dirname "$(dirname "$(dirname "$(dirname "$(pwd)")")")")"
 else
-  printf "$TIME_FORMAT_FILE: ERROR: No .git folder $(pwd)/.git nor $(dirname "$(pwd)")/.git found\n" | tee -a "$LOG_ERROR";
+  printf "ERROR: No .git folder $(pwd)/.git nor $(dirname "$(pwd)")/.git found\n" | tee -a "error.log";
   exit 1
 fi
+
+LOG_DIR="$GIT_DIR/logs"
+LOG_ERROR="$LOG_DIR/error.log"
+LOG_DEPLOY="$LOG_DIR/deploy.log"
+#TIME_FORMAT=$(date "%Y-%m-%d_%H:%M:%S");
+TIME_FORMAT_FILE=$(date +"%Y-%m-%d-%H%M%S")
 
 TPL_NAME="$(basename "$TPL_DIR")"
 TPL_FILEADMIN_DIR="$TPL_DIR/Initialisation/Files"

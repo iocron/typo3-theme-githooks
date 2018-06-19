@@ -22,7 +22,10 @@ Custom Typo3 Theme Githooks for easier Developments within Teams.
   git config core.hooksPath .githooks
   ```
 
-4. Try pulling / merging something and the .githooks should get triggered. Have fun :)
+4. Try it out:
+
+  * 4.1 Try pulling / merging something and the .githooks should get triggered
+  * 4.2 Or initialize the post-merge script first: `bash .githooks/post-merge`
 
 *(Note: If any problems occur, then please check the logs in .githooks/logs)*
 
