@@ -1,0 +1,129 @@
+#!/bin/bash
+# shellcheck source=/dev/null
+# MIT © Sebastian Pieczona - sp@iocron.com
+# Bash Exit if a command exits with a non-zero status #
+set -e
+
+# Set Generic Variables
+LOG_DIR="./logs"
+LOG_ERROR="$LOG_DIR/error.log"
+LOG_DEPLOY="$LOG_DIR/deploy.log"
+#TIME_FORMAT=$(date "%Y-%m-%d_%H:%M:%S");
+TIME_FORMAT_FILE=$(date +"%Y-%m-%d-%H%M%S")
+
+if [[ -d "$(pwd)/.git" ]]; then
+  GIT_DIR="$(pwd)/.git"
+  TPL_DIR="$(pwd)"
+  ROOT_DIR="$(dirname "$(dirname "$(dirname "$(pwd)")")")"
+elif [[ -d "$(dirname "$(pwd)")/.git" ]]; then
+  GIT_DIR="$(dirname "$(pwd)")/.git"
+  TPL_DIR="$(dirname "$(pwd)")"
+  ROOT_DIR="$(dirname "$(dirname "$(dirname "$(dirname "$(pwd)")")")")"
+else
+  printf "$TIME_FORMAT_FILE: ERROR: No .git folder $(pwd)/.git nor $(dirname "$(pwd)")/.git found\n" | tee -a "$LOG_ERROR";
+  exit 1
+fi
+
+TPL_NAME="$(basename "$TPL_DIR")"
+TPL_FILEADMIN_DIR="$TPL_DIR/Initialisation/Files"
+ROOT_FILEADMIN_DIR="$ROOT_DIR/fileadmin"
+ROOT_FILEADMIN_TPL_DIR="$ROOT_FILEADMIN_DIR/$TPL_NAME"
+
+printf "###########################\n" | tee -a "$LOG_DEPLOY";
+printf "START OF GITHOOK POST-MERGE: $TIME_FORMAT_FILE\n" | tee -a "$LOG_DEPLOY";
+printf "###########################\n" | tee -a "$LOG_DEPLOY";
+printf "GENERIC VARIABLES: \n" | tee -a "$LOG_DEPLOY";
+printf "GIT_DIR=$GIT_DIR\n" | tee -a "$LOG_DEPLOY"
+printf "TPL_DIR=$TPL_DIR\n" | tee -a "$LOG_DEPLOY"
+printf "TPL_NAME=$TPL_NAME\n" | tee -a "$LOG_DEPLOY"
+printf "TPL_FILEADMIN_DIR=$TPL_FILEADMIN_DIR\n" | tee -a "$LOG_DEPLOY"
+printf "ROOT_DIR=$ROOT_DIR\n" | tee -a "$LOG_DEPLOY"
+printf "ROOT_FILEADMIN_DIR=$ROOT_FILEADMIN_DIR\n" | tee -a "$LOG_DEPLOY"
+printf "ROOT_FILEADMIN_TPL_DIR=$ROOT_FILEADMIN_TPL_DIR\n" | tee -a "$LOG_DEPLOY"
+
+########### DIRECTORY / FILE INIT: ###########
+if [[ ! -d "$LOG_DIR" ]]; then
+  mkdir "$LOG_DIR"
+fi
+
+########### TYPO3 Fileadmin Sync: ###########
+printf "###########################\n" | tee -a "$LOG_DEPLOY";
+printf "TYPO3 FILEADMIN SYNC: \n" | tee -a "$LOG_DEPLOY";
+
+if [[ -d "$ROOT_FILEADMIN_DIR" && ! -d "$ROOT_FILEADMIN_TPL_DIR" ]]; then
+  mkdir $ROOT_FILEADMIN_TPL_DIR && printf "INFO: ROOT_FILEADMIN_TPL_DIR: Created the directory $ROOT_FILEADMIN_TPL_DIR for the sync process.\n" | tee -a "$LOG_DEPLOY";
+fi
+
+if [[ ! -d "$TPL_DIR" ]]; then
+  printf "$TIME_FORMAT_FILE: ERROR: TPL_DIR: The folder $TPL_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
+  exit 1;
+elif [[ ! -d "$TPL_FILEADMIN_DIR" ]]; then
+  printf "$TIME_FORMAT_FILE: ERROR: TPL_FILEADMIN_DIR: The folder $TPL_FILEADMIN_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
+  exit 1;
+elif [[ ! -d "$ROOT_FILEADMIN_DIR" ]]; then
+  printf "$TIME_FORMAT_FILE: ERROR: ROOT_FILEADMIN_DIR: The folder $ROOT_FILEADMIN_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
+  exit 1;
+elif [[ ! -d "$ROOT_FILEADMIN_TPL_DIR" ]]; then
+  printf "$TIME_FORMAT_FILE: ERROR: ROOT_FILEADMIN_TPL_DIR: The folder $ROOT_FILEADMIN_TPL_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
+  exit 1;
+else
+  printf "$TIME_FORMAT_FILE: INFO: Syncing $TPL_FILEADMIN_DIR/ to $ROOT_FILEADMIN_TPL_DIR/, please wait a moment..\n" | tee -a "$LOG_DEPLOY";
+
+  if hash rsync 2>/dev/null; then
+    rsync -avz "$TPL_FILEADMIN_DIR/" "$ROOT_FILEADMIN_TPL_DIR/" | tee -a "$LOG_DEPLOY";
+  elif hash cp 2>/dev/null; then
+    find "$TPL_FILEADMIN_DIR" -maxdepth 1 -type d ! -name "$(basename $TPL_FILEADMIN_DIR)" -print0 | xargs -I{} -0 cp -Rfpv {} "$ROOT_FILEADMIN_TPL_DIR"
+  else
+    printf "$TIME_FORMAT_FILE: ERROR: The commands rsync and cp do not exist on your system.\n" | tee -a "$LOG_ERROR";
+    exit 1;
+  fi
+
+  if [[ $? -eq 0 ]]; then
+    printf "FINISHED: The rsync process has been finished successfully.\n" | tee -a "$LOG_DEPLOY";
+  else
+    printf "ERROR: Something went wrong on rsync, please see the errors above.\n" | tee -a "$LOG_ERROR";
+    exit 1;
+  fi
+fi
+
+########### GULP INIT: ###########
+printf "###########################\n" | tee -a "$LOG_DEPLOY";
+printf "GULP INIT: \n" | tee -a "$LOG_DEPLOY";
+if hash curl 2>/dev/null; then
+  TMP_REPO="https://raw.githubusercontent.com/iocron/typo3-gulp-scss/master";
+
+  curl -o "$TPL_DIR/gulpfile.js" "$TMP_REPO/gulpfile.js";
+  if [[ -f "$TPL_DIR/gulpfile.js" ]]; then
+    printf "$TIME_FORMAT_FILE: INFO: Downloaded $TPL_DIR/gulpfile.js\n" | tee -a "$LOG_DEPLOY";
+  else
+    printf "$TIME_FORMAT_FILE: WARNING: $TPL_DIR/gulpfile.js was not downloaded.\n" | tee -a "$LOG_ERROR";
+  fi
+
+  curl -o "$TPL_DIR/package.json" "$TMP_REPO/package.json";
+  if [[ -f "$TPL_DIR/package.json" ]]; then
+    printf "$TIME_FORMAT_FILE: INFO: Downloaded $TPL_DIR/package.json\n" | tee -a "$LOG_DEPLOY";
+  else
+    printf "$TIME_FORMAT_FILE: WARNING: $TPL_DIR/package.json was not downloaded.\n" | tee -a "$LOG_ERROR";
+  fi
+
+  curl -o "$TPL_DIR/package-lock.json" "$TMP_REPO/package-lock.json";
+  if [[ -f "$TPL_DIR/package-lock.json" ]]; then
+    printf "$TIME_FORMAT_FILE: INFO: Downloaded $TPL_DIR/package-lock.json\n" | tee -a "$LOG_DEPLOY";
+  else
+    printf "$TIME_FORMAT_FILE: WARNING: $TPL_DIR/package-lock.json was not downloaded.\n" | tee -a "$LOG_ERROR";
+  fi
+
+  if [[ -f "$TPL_DIR/gulpfile.js" && -f "$TPL_DIR/package.json" && -f "$TPL_DIR/package-lock.json" ]]; then
+    if hash npm 2>/dev/null; then
+      npm install | tee -a "$LOG_DEPLOY";
+      printf "$TIME_FORMAT_FILE: INFO: npm install done.\n" | tee -a "$LOG_DEPLOY";
+    else
+      printf "$TIME_FORMAT_FILE: ERROR: npm command doesn't exist on your system\n" | tee -a "$LOG_ERROR";
+      exit 1;
+    fi
+  fi
+else
+  printf "$TIME_FORMAT_FILE: ERROR: THE COMMAND curl DOESN'T EXIST ON YOUR SYSTEM.\n" | tee -a "$LOG_ERROR";
+  exit 1;
+fi
+printf "\n" | tee -a "$LOG_DEPLOY";

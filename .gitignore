@@ -1,0 +1,7 @@
+/vendor
+composer.phar
+composer.lock
+migration.sql
+.dbdiff
+.DS_Store
+Thumbs.db
