@@ -25,7 +25,7 @@ Custom Typo3 Theme Githooks for easier Developments within Teams.
 4. Try it out:
 
   * 4.1 Try pulling / merging something and the .githooks should get triggered
-  * 4.2 Or initialize the post-merge script first: `bash .githooks/post-merge`
+  * 4.2 Or try/execute the post-merge script directly: `bash .githooks/post-merge`
 
 *(Note: If any problems occur, then please check the logs in .githooks/logs)*
 
@@ -45,4 +45,5 @@ Current available Githooks:
 ## Todos
 
  - More Hooks for different jobs (e.g. scss?!)
+ - Auto-Update/Self-Update (Pull) on post-merge of .githooks?!
  - Need some feedback :)

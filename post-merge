@@ -58,7 +58,9 @@ if [[ ! -d "$TPL_DIR" ]]; then
   printf "$TIME_FORMAT_FILE: ERROR: TPL_DIR: The folder $TPL_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
   exit 1;
 elif [[ ! -d "$TPL_FILEADMIN_DIR" ]]; then
-  printf "$TIME_FORMAT_FILE: ERROR: TPL_FILEADMIN_DIR: The folder $TPL_FILEADMIN_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
+  mkdir -p $TPL_FILEADMIN_DIR
+  printf "$TIME_FORMAT_FILE: INFO: TPL_FILEADMIN_DIR: The folder $TPL_FILEADMIN_DIR has been created.\n" | tee -a "$LOG_DEPLOY";
+  # printf "$TIME_FORMAT_FILE: ERROR: TPL_FILEADMIN_DIR: The folder $TPL_FILEADMIN_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
   exit 1;
 elif [[ ! -d "$ROOT_FILEADMIN_DIR" ]]; then
   printf "$TIME_FORMAT_FILE: ERROR: ROOT_FILEADMIN_DIR: The folder $ROOT_FILEADMIN_DIR doesn't exist.\n" | tee -a "$LOG_ERROR";
